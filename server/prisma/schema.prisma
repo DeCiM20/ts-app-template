@@ -1,0 +1,83 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("POSTGRES_PRISMA_URL")
+}
+
+enum Tier {
+    FREE
+    PRO
+    ENTERPRISE
+}
+
+model User {
+    id String @id @default(cuid())
+
+    email String @unique
+    tier  Tier   @default(FREE)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    organizations Organization[]
+    collaborators Collaborator[]
+}
+
+model Verification {
+    id String @id @default(cuid())
+
+    email String @unique
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model Organization {
+    id String @id @default(cuid())
+
+    name        String
+    description String? @db.Text
+
+    ownerId String
+    owner   User   @relation(fields: [ownerId], references: [id])
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    collaborators Collaborator[]
+}
+
+enum Role {
+    ADMIN
+    MEMBER
+}
+
+enum Permission {
+    MANAGE_ORGANIZATION
+    MANAGE_BILLING
+    MANAGE_PROJECTS
+    MANAGE_USERS
+    VIEW_ANALYTICS
+    VIEW_PROJECTS
+    VIEW_USERS
+}
+
+model Collaborator {
+    id String @id @default(cuid())
+
+    role        Role         @default(MEMBER)
+    permissions Permission[]
+
+    userId         String
+    user           User         @relation(fields: [userId], references: [id])
+    organizationId String
+    organization   Organization @relation(fields: [organizationId], references: [id])
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@unique([userId, organizationId])
+}
