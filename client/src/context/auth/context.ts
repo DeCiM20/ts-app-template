@@ -3,6 +3,8 @@ import { QueryObserverResult, RefetchOptions } from "@tanstack/react-query"
 
 export type Permissions = "MANAGE_ORGANIZATION" | "MANAGE_BILLING" | "MANAGE_PROJECTS" | "MANAGE_USERS" | "VIEW_ANALYTICS" | "VIEW_PROJECTS" | "VIEW_USERS"
 
+export type Role = "MEMBER" | "ADMIN"
+
 export interface User {
   id: string
   email: string
@@ -18,7 +20,7 @@ export interface User {
     id: string
     createdAt: Date
     updatedAt: Date
-    role: "MEMBER" | "ADMIN"
+    role: Role
     permissions: Permissions[]
     userId: string
     organizationId: string
