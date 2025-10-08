@@ -27,7 +27,7 @@ const verifyPermissions = (role: Role, permissions: Permission[]) => {
     const org = req.body.org || req.params.org
     if (!org) throw new ExpressError({ code: "BAD_REQUEST", message: "Organization ID missing!!" })
 
-    const collaborator = user.collaborators.find(c => c.organizationId === org)
+    const collaborator = user.collaborations.find(c => c.organizationId === org)
     if (!collaborator) throw new ExpressError({ code: "FORBIDDEN", message: "You don't have permission to access this resource!!" })
 
     if (collaborator.role !== role) throw new ExpressError({ code: "FORBIDDEN", message: `You must be a ${role} to access this resource!!` })

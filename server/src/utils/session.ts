@@ -44,7 +44,7 @@ interface TokenType {
 
 interface SessionType {
   id: string
-  user: User & { collaborators: Collaborator[] }
+  user: User & { collaborations: Collaborator[] }
   accessToken: string
   refreshToken: string
   expiresAt: number
@@ -70,7 +70,7 @@ class SessionManager {
     })
   }
 
-  async create(id: string, user: User & { collaborators: Collaborator[] }) {
+  async create(id: string, user: User & { collaborations: Collaborator[] }) {
     const sid = uuid()
     const payload: TokenType = { id, sid }
     const accessToken = jwt.sign(payload, env.JWT_ACCESS_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRY })
