@@ -7,17 +7,10 @@ datasource db {
     url      = env("POSTGRES_PRISMA_URL")
 }
 
-enum Tier {
-    FREE
-    PRO
-    ENTERPRISE
-}
-
 model User {
     id String @id @default(cuid())
 
     email String @unique
-    tier  Tier   @default(FREE)
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -25,6 +18,25 @@ model User {
     organizations  Organization[]
     collaborations Collaborator[]
     invitations    Invitation[]
+    subscriptions  Subscription[]
+}
+
+enum Plan {
+    PRO
+    ENTERPRISE
+}
+
+model Subscription {
+    id   String @id @default(cuid())
+    plan Plan   @default(PRO)
+
+    userId String @unique
+    user   User   @relation(fields: [userId], references: [id])
+
+    lastPaidAt DateTime
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 }
 
 model Verification {
@@ -94,8 +106,9 @@ model Collaborator {
     role        Role         @default(MEMBER)
     permissions Permission[]
 
-    userId         String
-    user           User         @relation(fields: [userId], references: [id])
+    userId String
+    user   User   @relation(fields: [userId], references: [id])
+
     organizationId String
     organization   Organization @relation(fields: [organizationId], references: [id])
 

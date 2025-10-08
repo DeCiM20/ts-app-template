@@ -34,10 +34,10 @@ export const verify = async (req: Request, res: Response) => {
   const verification = await db.verification.findFirst({ where: { email: input.email, id: input.code } })
   if (!verification) throw new ExpressError({ code: "UNAUTHORIZED", message: "Invalid credentials!!" })
 
-  const user = await db.user.findFirst({ where: { email: input.email }, include: { collaborations: true } })
+  const user = await db.user.findFirst({ where: { email: input.email }, include: { collaborations: true, organizations: true, subscriptions: true } })
   if (!user) throw new ExpressError({ code: "UNAUTHORIZED", message: "User not found!" })
 
-  const { accessToken, refreshToken } = await session.create(user.id, user)
+  const { accessToken, refreshToken } = await session.create({...user, subscription: user.subscriptions[0]})
 
   await db.verification.delete({ where: { id: verification.id } })
 
@@ -74,10 +74,7 @@ export const signOut = async (req: Request, res: Response) => {
 }
 
 export const profile = async (req: Request, res: Response) => {
-  const uid = req.user?.id
-  if (!uid) throw new ExpressError({ code: "UNAUTHORIZED", message: "User session not found!" })
-
-  const user = await db.user.findUnique({ where: { id: uid }, include: { organizations: true, collaborations: true } })
+  const user = req.user
   if (!user) throw new ExpressError({ code: "NOT_FOUND", message: "User not found!" })
 
   return res.status(200).json(user)

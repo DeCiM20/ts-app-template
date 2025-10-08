@@ -5,12 +5,15 @@ import { env } from "~/utils/env"
 import { SessionUserType } from "~/@types/express"
 import { session } from "~/utils/session"
 import { Permission, Role } from "@prisma/client"
+import { db } from "~/utils/db"
+import { LIMITS } from "~/utils/constants"
 
 const verifyAuth = async (req: Request, _res: Response, next: NextFunction) => {
   try {
     const token = req.cookies["Access-Token"]
-    const paayload = await session.read(token)
-    req.user = paayload.user as SessionUserType
+    const payload = await session.read(token)
+    req.user = payload.user as SessionUserType
+    req.sid = payload.sid
     next()
   } catch (e) {
     console.error(e)
@@ -39,6 +42,20 @@ const verifyPermissions = (role: Role, permissions: Permission[]) => {
   }
 }
 
+const verifyTierLimit = (resource: keyof typeof LIMITS.FREE) => {
+  return async (req: Request, _res: Response, next: NextFunction) => {
+    const user = req.user
+    if (!user) throw new ExpressError({ code: "UNAUTHORIZED", message: "Unauthorized access - Log in to access the resource!!" })
+
+    if (resource === "organizations") {
+      const count = await db.organization.count({ where: { ownerId: user.id } })
+      if (count >= LIMITS[user.subscription ? user.subscription.plan : "FREE"].organizations) throw new ExpressError({ code: "FORBIDDEN", message: "Limit Exceeded!" })
+    }
+
+    next()
+  }
+}
+
 const verifyRefresh = async (req: Request, _res: Response, next: NextFunction) => {
   const token = req.cookies["Refresh-Token"]
   if (!token) throw new ExpressError({ code: "BAD_REQUEST", message: "Refresh token missing!!" })
@@ -50,4 +67,4 @@ const verifyRefresh = async (req: Request, _res: Response, next: NextFunction) =
   })
 }
 
-export { verifyAuth, verifyPermissions, verifyRefresh }
+export { verifyAuth, verifyPermissions, verifyTierLimit, verifyRefresh }

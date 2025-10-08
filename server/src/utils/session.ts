@@ -2,7 +2,9 @@ import jwt from "jsonwebtoken"
 import { env } from "~/utils/env"
 import rc from "~/middleware/redis"
 import { v4 as uuid } from "uuid"
-import { Collaborator, User } from "@prisma/client"
+import { Collaborator, Organization, Subscription, User } from "@prisma/client"
+import { db } from "./db"
+import { SessionUserType } from "~/@types/express"
 
 const ACCESS_TOKEN_EXPIRY = 24 * 60 * 60 // 1 Days in seconds
 const REFRESH_TOKEN_EXPIRY = 30 * 24 * 60 * 60 // 30 Days in seconds
@@ -38,13 +40,12 @@ export const COOKIE_CONFIG: CookieConfig = {
 }
 
 interface TokenType {
-  id: string
   sid: string
 }
 
 interface SessionType {
-  id: string
-  user: User & { collaborations: Collaborator[] }
+  sid: string
+  user: SessionUserType
   accessToken: string
   refreshToken: string
   expiresAt: number
@@ -70,16 +71,28 @@ class SessionManager {
     })
   }
 
-  async create(id: string, user: User & { collaborations: Collaborator[] }) {
+  async create(user: SessionUserType) {
     const sid = uuid()
-    const payload: TokenType = { id, sid }
+    const payload: TokenType = { sid }
     const accessToken = jwt.sign(payload, env.JWT_ACCESS_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRY })
     const refreshToken = jwt.sign(payload, env.JWT_REFRESH_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRY })
 
-    const sp: SessionType = { id, user, accessToken, refreshToken, expiresAt: Math.floor(Date.now() / 1000) + REFRESH_TOKEN_EXPIRY } // session payload
+    const sp: SessionType = { sid, user, accessToken, refreshToken, expiresAt: Math.floor(Date.now() / 1000) + REFRESH_TOKEN_EXPIRY } // session payload
 
     await rc.set(`sess:${sid}`, JSON.stringify(sp), { EX: REFRESH_TOKEN_EXPIRY })
     return { accessToken, refreshToken }
+  }
+
+  async update(sid: string) {
+    const _session = await rc.get(`sess:${sid}`)
+    if (!_session) throw Error("Session not found")
+
+    const data = JSON.parse(_session) as SessionType
+    const user = await db.user.findUnique({ where: { id: data.user.id }, include: { collaborations: true, organizations: true, subscriptions: true } })
+    if (!user) throw Error("User not found!")
+    data.user = user
+
+    await rc.set(`sess:${sid}`, JSON.stringify(data), { KEEPTTL: true })
   }
 
   async refresh(ref: string) {
