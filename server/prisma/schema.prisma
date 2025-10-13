@@ -15,10 +15,10 @@ model User {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    organizations  Organization[]
-    collaborations Collaborator[]
+    collaborations Collaboration[]
     invitations    Invitation[]
     subscriptions  Subscription[]
+    organizations  Organization[]
 }
 
 enum Plan {
@@ -49,33 +49,34 @@ model Verification {
 }
 
 model Organization {
-    id String @id @default(cuid())
-
+    id          String  @id @default(cuid())
     name        String
     description String? @db.Text
 
     ownerId String
-    owner   User   @relation(fields: [ownerId], references: [id])
+    owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    collaborators Collaborator[]
+    projects Project[]
+}
+
+model Project {
+    id          String  @id @default(cuid())
+    name        String
+    description String? @db.Text
+
+    organizationId String
+    organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 }
 
 enum Role {
     ADMIN
     MEMBER
-}
-
-enum Permission {
-    MANAGE_ORGANIZATION
-    MANAGE_BILLING
-    MANAGE_PROJECTS
-    MANAGE_USERS
-    VIEW_ANALYTICS
-    VIEW_PROJECTS
-    VIEW_USERS
 }
 
 enum InvitationStatus {
@@ -85,35 +86,41 @@ enum InvitationStatus {
 }
 
 model Invitation {
-    id String @id @default(cuid())
+    id        String @id @default(cuid())
+    recipient String
 
-    recipient   String
-    role        Role         @default(MEMBER)
-    permissions Permission[]
-
-    status InvitationStatus @default(PENDING)
+    role        Role             @default(MEMBER)
+    permissions String[]
+    status      InvitationStatus @default(PENDING)
 
     senderId String
     sender   User   @relation(fields: [senderId], references: [id])
 
+    path  String[]
+    level Int
+
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+
+    @@unique([recipient])
 }
 
-model Collaborator {
+model Collaboration {
     id String @id @default(cuid())
 
-    role        Role         @default(MEMBER)
-    permissions Permission[]
+    scope String[] // ["org-id", "project-id"]
+
+    role        Role     @default(MEMBER)
+    permissions String[]
 
     userId String
     user   User   @relation(fields: [userId], references: [id])
 
-    organizationId String
-    organization   Organization @relation(fields: [organizationId], references: [id])
-
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    @@unique([userId, organizationId])
+    // Unique canonical key: user + path
+    @@unique([userId, scope])
+    @@index([userId, scope])
+    @@index([scope])
 }

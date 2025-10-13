@@ -34,7 +34,7 @@ export const verify = async (req: Request, res: Response) => {
   const verification = await db.verification.findFirst({ where: { email: input.email, id: input.code } })
   if (!verification) throw new ExpressError({ code: "UNAUTHORIZED", message: "Invalid credentials!!" })
 
-  const user = await db.user.findFirst({ where: { email: input.email }, include: { collaborations: true, organizations: true, subscriptions: true } })
+  const user = await db.user.findFirst({ where: { email: input.email }, include: { subscriptions: true } })
   if (!user) throw new ExpressError({ code: "UNAUTHORIZED", message: "User not found!" })
 
   const { accessToken, refreshToken } = await session.create({...user, subscription: user.subscriptions[0]})

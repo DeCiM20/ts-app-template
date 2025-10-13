@@ -2,7 +2,6 @@ import jwt from "jsonwebtoken"
 import { env } from "~/utils/env"
 import rc from "~/middleware/redis"
 import { v4 as uuid } from "uuid"
-import { Collaborator, Organization, Subscription, User } from "@prisma/client"
 import { db } from "./db"
 import { SessionUserType } from "~/@types/express"
 
@@ -88,7 +87,7 @@ class SessionManager {
     if (!_session) throw Error("Session not found")
 
     const data = JSON.parse(_session) as SessionType
-    const user = await db.user.findUnique({ where: { id: data.user.id }, include: { collaborations: true, organizations: true, subscriptions: true } })
+    const user = await db.user.findUnique({ where: { id: data.user.id }, include: { subscriptions: true } })
     if (!user) throw Error("User not found!")
     data.user = user
 
