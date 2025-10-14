@@ -72,6 +72,20 @@ model Project {
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+
+    tasks Task[]
+}
+
+model Task {
+    id      String @id @default(cuid())
+    name    String
+    content String @db.Text
+
+    projectId String
+    project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 }
 
 enum Role {
@@ -89,15 +103,13 @@ model Invitation {
     id        String @id @default(cuid())
     recipient String
 
+    scope       String[]
     role        Role             @default(MEMBER)
     permissions String[]
     status      InvitationStatus @default(PENDING)
 
     senderId String
     sender   User   @relation(fields: [senderId], references: [id])
-
-    path  String[]
-    level Int
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
