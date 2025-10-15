@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express"
 import { generate, verify, signOut, refresh, profile } from "./controller"
-import VerifyAccess from "~/middleware/access"
+import VerifyAccess from "~/middleware/auth"
 import { Role } from "@prisma/client"
 import { Resource } from "~/utils/permissions"
 
