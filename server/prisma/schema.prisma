@@ -22,13 +22,13 @@ model User {
 }
 
 enum Plan {
-    PRO
-    ENTERPRISE
+    pro
+    enterprise
 }
 
 model Subscription {
     id   String @id @default(cuid())
-    plan Plan   @default(PRO)
+    plan Plan   @default(pro)
 
     userId String @unique
     user   User   @relation(fields: [userId], references: [id])
@@ -89,24 +89,25 @@ model Task {
 }
 
 enum Role {
-    ADMIN
-    MEMBER
+    admin
+    project_admin
+    member
 }
 
 enum InvitationStatus {
-    PENDING
-    ACCEPTED
-    DECLINED
+    pending
+    accepted
+    declined
 }
 
 model Invitation {
     id        String @id @default(cuid())
     recipient String
 
-    scope       String[]
-    role        Role             @default(MEMBER)
+    scope       String
+    role        Role             @default(member)
     permissions String[]
-    status      InvitationStatus @default(PENDING)
+    status      InvitationStatus @default(pending)
 
     senderId String
     sender   User   @relation(fields: [senderId], references: [id])
@@ -120,9 +121,9 @@ model Invitation {
 model Collaboration {
     id String @id @default(cuid())
 
-    scope String[] // ["org-id", "project-id"]
+    scope String // canonical path, e.g. "/organization:id/project:id"
 
-    role        Role     @default(MEMBER)
+    role        Role
     permissions String[]
 
     userId String
@@ -133,6 +134,5 @@ model Collaboration {
 
     // Unique canonical key: user + path
     @@unique([userId, scope])
-    @@index([userId, scope])
     @@index([scope])
 }
